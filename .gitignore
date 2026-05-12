@@ -1,0 +1,18 @@
+# Dependencies and build output
+node_modules/
+dist/
+.vite/
+coverage/
+
+# Editor / OS
+.DS_Store
+._*
+*.local
+.idea/
+.vscode/
+
+# Claude Code local settings (per-user, not for the repo)
+.claude/
+
+# Stale artifacts kept locally but not in version control
+Project1.xlsx
