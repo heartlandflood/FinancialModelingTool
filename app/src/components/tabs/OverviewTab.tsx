@@ -82,7 +82,7 @@ export function OverviewTab({
         </div>
       </div>
 
-      <div className="kpi-grid">
+      <div className="kpi-grid" data-tour="kpi-strip">
         <KpiStat
           label="Final cash"
           value={fmtCompact(last.cash)}
@@ -128,7 +128,36 @@ export function OverviewTab({
         </div>
       )}
 
-      <Section title="Horizon" titleEm="summary" sub={`Where the ${fmtCompact(last.cash)} comes from`}>
+      <Section
+        title="Horizon"
+        titleEm="summary"
+        sub={`Where the ${fmtCompact(last.cash)} comes from`}
+        dataTour="horizon-summary"
+        infoIntro="The accounting story behind your final cash."
+        info={
+          <>
+            <p>
+              <strong>Inflows</strong> are money flowing into the business.
+              <em> Revenue booked</em> is what you've sold; <em>cash collected</em> is what's
+              actually arrived (per the <em>20/40/40</em> collections lag — 20% the month of
+              the job, 40% the next month, 40% the month after that). The gap between them is
+              your accounts receivable.
+            </p>
+            <p>
+              <strong>Outflows</strong> are every dollar leaving cash. Critical OpEx (rent,
+              insurance, payroll) is must-pay. Flexible OpEx (marketing, software) is
+              discretionary. Debt service includes both interest and principal — the interest
+              portion is an expense, the principal portion is a balance-sheet move.
+            </p>
+            <p>
+              The <strong>reconciliation</strong> row at the bottom proves the math:{' '}
+              <code>starting cash + collected − outflows = final cash</code>. If the engine
+              reports a different number, that means surplus paydown moved cash to principal
+              (it shows up as "principal paid" in debt service rather than as cash on hand).
+            </p>
+          </>
+        }
+      >
         <HorizonSummary
           projection={projection}
           startingCash={startingCash}
@@ -137,12 +166,57 @@ export function OverviewTab({
       </Section>
 
       {commission.enabled && (
-        <Section title="Sales" titleEm="commission" sub={commission.assigneeName || 'Unassigned'}>
+        <Section
+          title="Sales"
+          titleEm="commission"
+          sub={commission.assigneeName || 'Unassigned'}
+          infoIntro="A tiered cut of revenue, paid as cash."
+          info={
+            <>
+              <p>
+                Each month the engine computes <em>per-job revenue</em> = revenue ÷ number of
+                jobs. If that's <strong>above the threshold</strong>, the high rate applies
+                to the whole month's revenue. Otherwise the low rate.
+              </p>
+              <p>
+                Because the engine treats all jobs in a month as the same size, commission is
+                calculated at month granularity — not per individual job. To model job-level
+                tier mixing, adjust min/max jobs and revenue variation on the Inputs tab.
+              </p>
+              <p>
+                The total here lands in the <em>Outflows</em> column above and reduces
+                operating profit. If you've assigned a roster name, the commission stacks
+                onto that person's annual pay in the Labor table.
+              </p>
+            </>
+          }
+        >
           <CommissionSummary projection={projection} commission={commission} />
         </Section>
       )}
 
-      <Section title="Cash &" titleEm="debt" sub="18-month line">
+      <Section
+        title="Cash &"
+        titleEm="debt"
+        sub="18-month line"
+        dataTour="cash-chart"
+        infoIntro="The trajectory at a glance."
+        info={
+          <>
+            <p>
+              The navy line is <strong>cash on hand</strong>, end-of-month. The orange line is{' '}
+              <strong>total debt</strong>. A profitable business shows cash rising and debt flat
+              or falling. A business that needs to draw on LOCs to make payroll will show the
+              two lines converging.
+            </p>
+            <p>
+              The dashed horizontal line marks your <em>starting cash</em>. Crossing below it
+              is an early warning — even if you still have headroom on your LOCs, you're
+              consuming the cushion you started with.
+            </p>
+          </>
+        }
+      >
         <CashDebtChart projection={projection} startingCash={startingCash} />
       </Section>
 
@@ -151,6 +225,22 @@ export function OverviewTab({
           title="Labor"
           titleEm="cost by person"
           sub="From the imported roster"
+          infoIntro="What you pay each person, year-on-year."
+          info={
+            <>
+              <p>
+                The roster comes from the <em>2. Labor</em> sheet in the workbook. The engine
+                still sees a single aggregated payroll line — this view is purely a breakdown
+                so you can see where the payroll dollars go.
+              </p>
+              <p>
+                <strong>Base monthly</strong> is loaded cost (wage + payroll taxes + workers
+                comp + benefits). <strong>Annual</strong> is base × 12 plus any commission
+                attributed to that person. <strong>Over horizon</strong> is base × horizon
+                months plus the cumulative commission they earned over those months.
+              </p>
+            </>
+          }
         >
           <LaborRoster
             roster={laborRoster}
@@ -161,7 +251,26 @@ export function OverviewTab({
         </Section>
       )}
 
-      <Section title="Monthly" titleEm="statement" sub="What happens, when">
+      <Section
+        title="Monthly"
+        titleEm="statement"
+        sub="What happens, when"
+        infoIntro="Drill into any single month."
+        info={
+          <>
+            <p>
+              One row per month. <em>Revenue</em> is booked work, <em>collected</em> is the
+              cash actually received that month (a mix of this month and prior months at the
+              20/40/40 schedule), <em>cash</em> is the end-of-month balance.
+            </p>
+            <p>
+              The <strong>events</strong> column tags special activity: float charges, LOC
+              draws, paydowns, settlements, and shortages. If a month feels surprising,
+              start here.
+            </p>
+          </>
+        }
+      >
         <MonthTable projection={projection} />
       </Section>
 

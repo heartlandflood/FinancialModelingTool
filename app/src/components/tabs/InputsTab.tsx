@@ -48,7 +48,37 @@ export function InputsTab({
         </div>
       )}
 
-      <Section title="Revenue &" titleEm="model" sub="How months unfold">
+      <Section
+        title="Revenue &"
+        titleEm="model"
+        sub="How months unfold"
+        dataTour="inputs-revenue"
+        infoIntro="The dials that drive every projected number."
+        info={
+          <>
+            <p>
+              <strong>Starting cash</strong> is your bank balance on day 1.{' '}
+              <strong>Projection months</strong> sets the horizon (6–36).
+            </p>
+            <p>
+              Revenue each month = <code>avgJobSize × jobs × (1 + variation)</code>.{' '}
+              <em>Jobs</em> is drawn uniformly from <code>[min, max]</code>;{' '}
+              <em>variation</em> is uniform on <code>[−v, +v]</code>. Set min = max to model a
+              steady revenue line; widen the range for volatility.
+            </p>
+            <p>
+              <strong>Surplus paydown fraction</strong> is what share of leftover cash each
+              month gets applied to debt (highest-APR first). 0.5 = pay down half your
+              surplus; 0 = never pay down.
+            </p>
+            <p>
+              <strong>Owner draw</strong> is a fixed monthly cash expense — the simulation
+              treats it like any other bill. If you want to see whether you can sustain a
+              bigger draw, raise this number and watch for shortage events.
+            </p>
+          </>
+        }
+      >
         <div className="card">
           <div className="field-grid">
             <Field label="Starting cash" hint="Bank balance on day 1">
@@ -178,7 +208,31 @@ export function InputsTab({
         />
       </Section>
 
-      <Section title="Sales" titleEm="commission" sub="Tiered % of revenue">
+      <Section
+        title="Sales"
+        titleEm="commission"
+        sub="Tiered % of revenue"
+        infoIntro="Pay a sales rep a slice of revenue, with a different rate above and below a job-size cutoff."
+        info={
+          <>
+            <p>
+              Each month: per-job revenue = monthly revenue ÷ jobs. If it's{' '}
+              <strong>above the threshold</strong> the high rate applies to that whole
+              month's revenue; otherwise the low rate.
+            </p>
+            <p>
+              Defaults reflect the rule "12% above $5,000, 7% at or below." Edit
+              freely. The commission cost lands in <em>Outflows</em> on Overview and reduces
+              operating profit.
+            </p>
+            <p>
+              The <strong>assignee</strong> is only used for attribution — the engine pays
+              commission regardless of who gets credit. Pick a roster name to see this
+              person's annual pay include the bonus.
+            </p>
+          </>
+        }
+      >
         <div className="card">
           <Toggle
             label="Enable sales commission"
@@ -245,7 +299,32 @@ export function InputsTab({
         </div>
       </Section>
 
-      <Section title="Float" titleEm="strategy" sub="90-day LOC chain">
+      <Section
+        title="Float"
+        titleEm="strategy"
+        sub="90-day LOC chain"
+        infoIntro="Defer cash outlays by routing certain expenses through your credit lines."
+        info={
+          <>
+            <p>
+              Mark a critical expense as <em>useFloat</em> on its row above. When the float
+              strategy is enabled, those expenses charge to the <strong>primary LOC</strong>{' '}
+              every month instead of leaving cash.
+            </p>
+            <p>
+              In the <strong>transfer month</strong>, the accumulated primary-LOC balance
+              moves to the <strong>secondary LOC</strong> (typically cheaper APR). In the{' '}
+              <strong>due month</strong>, the engine settles the secondary balance from cash
+              (drawing from other LOCs if cash is short).
+            </p>
+            <p>
+              Used carefully, this lets a profitable but cash-tight business survive
+              expensive months. Used carelessly, it pushes a real problem 90 days into the
+              future and adds interest cost.
+            </p>
+          </>
+        }
+      >
         <div className="card">
           <Toggle
             label="Enable float strategy"

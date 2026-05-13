@@ -24,6 +24,7 @@ export function FileActions({
         variant="primary"
         onClick={onUseTemplate}
         title="Populate inputs from the bundled template"
+        data-tour="use-template"
       >
         <SparkIcon /> Use template
       </Button>

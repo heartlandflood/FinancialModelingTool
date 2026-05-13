@@ -36,7 +36,33 @@ export function ScenariosTab({ state }: { state: ReturnType<typeof useAppState> 
         </div>
       </div>
 
-      <Section title="Run" titleEm="parameters">
+      <Section
+        title="Run"
+        titleEm="parameters"
+        dataTour="scenarios-run"
+        infoIntro="One hundred parallel universes of your business."
+        info={
+          <>
+            <p>
+              Each simulation plays the horizon forward with a different draw from the
+              revenue distribution you set on the <em>Inputs</em> tab. Job count and
+              variation are random; everything else (expenses, debts, owner draw) stays
+              fixed.
+            </p>
+            <p>
+              <strong>Scenarios</strong> (P10 / P50 / P90) are <em>real runs</em> — ranked by
+              final net position (cash − debt). The P10 scenario is the actual simulation
+              that ended in the 10th-percentile spot, not a synthetic average. Their charts
+              trace a coherent path.
+            </p>
+            <p>
+              <strong>Bands</strong> on a per-month basis sort independently. Use them for
+              "how wide is the range in month 9?" type questions, not for tracing a
+              specific scenario.
+            </p>
+          </>
+        }
+      >
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 24, flexWrap: 'wrap' }}>
             <Field label="Simulations" hint="100 is a good default">

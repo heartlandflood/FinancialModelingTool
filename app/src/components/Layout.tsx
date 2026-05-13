@@ -17,12 +17,14 @@ export function Layout({
   onTab,
   onImport,
   onUseTemplate,
+  onTour,
   children,
 }: {
   tab: TabKey;
   onTab: (t: TabKey) => void;
   onImport: (file: File) => void;
   onUseTemplate: () => void;
+  onTour: () => void;
   children: ReactNode;
 }) {
   return (
@@ -52,6 +54,22 @@ export function Layout({
           </nav>
 
           <div className="header-actions">
+            <button
+              className="help-btn"
+              onClick={onTour}
+              aria-label="Take the tour"
+              title="Take the tour"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="5.6" stroke="currentColor" strokeWidth="1.3" />
+                <path
+                  d="M5.4 5.6c0-.9.7-1.6 1.6-1.6s1.6.7 1.6 1.6c0 .7-.4 1.1-1 1.4-.4.2-.6.5-.6.9v.2M7 10.1v.05"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
             <FileActions onImport={onImport} onUseTemplate={onUseTemplate} />
           </div>
         </div>

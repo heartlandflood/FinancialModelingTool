@@ -1,6 +1,7 @@
 // Small set of reusable visual atoms. Lean on styles.css for the look.
 
-import type { ReactNode, InputHTMLAttributes, ButtonHTMLAttributes } from 'react';
+import { useState, type ReactNode, type InputHTMLAttributes, type ButtonHTMLAttributes } from 'react';
+import { InfoToggle, InfoPanel } from './InfoPopover';
 
 export function Button({
   variant = 'default',
@@ -137,21 +138,36 @@ export function Section({
   titleEm,
   sub,
   children,
+  info,
+  infoIntro,
+  dataTour,
 }: {
   title: string;
   titleEm?: string;
   sub?: ReactNode;
   children: ReactNode;
+  info?: ReactNode;
+  infoIntro?: string;
+  dataTour?: string;
 }) {
+  const [infoOpen, setInfoOpen] = useState(false);
   return (
-    <section className="section">
+    <section className="section" {...(dataTour ? { 'data-tour': dataTour } : {})}>
       <div className="section-head">
         <h2 className="heading">
           {title}
           {titleEm && <> <em>{titleEm}</em></>}
+          {info && (
+            <InfoToggle
+              open={infoOpen}
+              onToggle={() => setInfoOpen((o) => !o)}
+              label={`Explain ${title}`}
+            />
+          )}
         </h2>
         {sub && <div className="sub">{sub}</div>}
       </div>
+      {info && infoOpen && <InfoPanel intro={infoIntro}>{info}</InfoPanel>}
       {children}
     </section>
   );
