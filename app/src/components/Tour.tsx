@@ -3,8 +3,12 @@
 // Next / Close controls. Tour steps know which tab to be on, so we drive
 // tab state from here.
 
-import { useEffect, useState, useLayoutEffect } from 'react';
+import { useState, useLayoutEffect } from 'react';
 import type { TabKey } from './Layout';
+
+// How many times to retry finding/measuring the target before giving up.
+// 30 × 50ms = 1.5s total — plenty for a parent tab switch + DOM mount.
+const MAX_MEASURE_ATTEMPTS = 30;
 
 export interface TourStep {
   id: string;
@@ -29,34 +33,53 @@ export function Tour({
   const current = steps[index]!;
 
   // Drive the active tab to whatever the current step wants.
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so the tab switch is scheduled in the
+  // same commit phase as the measurement below — avoids a one-frame window
+  // where the user sees the new tour card over the old tab's content.
+  useLayoutEffect(() => {
     onTab(current.tab);
   }, [current.tab, onTab]);
 
-  // Measure the target element on each step + on scroll/resize.
+  // Measure the target element. There's a race when a step changes the
+  // active tab: this layout effect fires synchronously after Tour's commit,
+  // but the parent's tab switch is a queued state update that hasn't been
+  // applied yet — so the new tab's DOM isn't mounted and querySelector
+  // returns null. We poll with a retry budget to wait for the target to
+  // appear (and for it to be actually sized — zero-size rects mean the
+  // element is in the tree but not laid out yet).
   useLayoutEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
-    const measure = () => {
+    let cancelled = false;
+
+    const tryMeasure = (attempt: number) => {
+      if (cancelled) return;
       const el = document.querySelector(current.targetSelector);
-      if (el) {
-        const r = el.getBoundingClientRect();
+      const r = el?.getBoundingClientRect();
+      if (el && r && r.width > 0 && r.height > 0) {
         setRect(r);
-        // Scroll the target into view if it's off-screen.
         if (r.top < 80 || r.bottom > window.innerHeight - 40) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          // Re-measure after scroll lands.
-          timer = setTimeout(measure, 350);
+          timer = setTimeout(() => tryMeasure(0), 350);
         }
+        return;
+      }
+      // Target not in DOM or not yet sized. Poll up to ~1.5s.
+      if (attempt < MAX_MEASURE_ATTEMPTS) {
+        timer = setTimeout(() => tryMeasure(attempt + 1), 50);
       } else {
+        // Give up and fall back to a fixed-position card; spotlight hides.
         setRect(null);
       }
     };
-    measure();
-    window.addEventListener('resize', measure);
-    window.addEventListener('scroll', measure, true);
+    tryMeasure(0);
+
+    const onViewportChange = () => tryMeasure(0);
+    window.addEventListener('resize', onViewportChange);
+    window.addEventListener('scroll', onViewportChange, true);
     return () => {
-      window.removeEventListener('resize', measure);
-      window.removeEventListener('scroll', measure, true);
+      cancelled = true;
+      window.removeEventListener('resize', onViewportChange);
+      window.removeEventListener('scroll', onViewportChange, true);
       if (timer) clearTimeout(timer);
     };
   }, [current.targetSelector, index]);
