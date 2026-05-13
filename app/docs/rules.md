@@ -166,6 +166,22 @@ secondary in month 2, settle in month 3.
 
 ---
 
+## 6.4 Sales commission (tiered per-job rate)
+
+Optional. When `commission.enabled` is true, the engine pays a sales commission each month based on the month's average per-job revenue:
+
+- `perJobRevenue(m) = revenue(m) / numJobs(m)`
+- If `perJobRevenue > commission.threshold`, apply `commission.highRate × revenue(m)`.
+- Otherwise apply `commission.lowRate × revenue(m)`.
+
+Defaults: threshold $5,000, high rate 12%, low rate 7%. The threshold is **strict** (>); a job exactly at threshold gets the low rate.
+
+The commission lands in **cash outflows** (alongside opex, debt service, owner draw) and reduces operating profit (§9). `commission.assigneeName` is informational only — the UI uses it to attribute cumulative commission to a roster row.
+
+Because the engine treats all jobs in a given month as having identical revenue (`revenue / numJobs`), commission is computed at month granularity, not at the level of individual job sizes within a month. Users wanting per-job variability would need a different revenue model.
+
+---
+
 ## 7. Shortage handling (LOC draws to cover cash needs)
 
 Computed once per month, after expenses + debt payments + float charges:

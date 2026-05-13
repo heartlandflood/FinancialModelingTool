@@ -11,15 +11,23 @@ export function App() {
 
   return (
     <>
-      <Layout tab={tab} onTab={setTab} onImport={state.importFromFile}>
+      <Layout
+        tab={tab}
+        onTab={setTab}
+        onImport={state.importFromFile}
+        onUseTemplate={state.useTemplateDefaults}
+      >
         {tab === 'overview'  && (
           <OverviewTab
             projection={state.projection}
             startingCash={state.inputs.config.startingCash}
             importInfo={state.importInfo}
+            laborRoster={state.laborRoster}
+            ownerDrawTarget={state.inputs.ownerDrawTarget}
+            commission={state.inputs.commission}
           />
         )}
-        {tab === 'inputs'    && <InputsTab    state={state} importInfo={state.importInfo} />}
+        {tab === 'inputs'    && <InputsTab    state={state} importInfo={state.importInfo} laborRoster={state.laborRoster} />}
         {tab === 'scenarios' && <ScenariosTab state={state} />}
       </Layout>
 

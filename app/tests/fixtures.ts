@@ -48,6 +48,17 @@ export function defaultInputs(): Inputs {
       annualTarget: 750000,
       targetProfitMargin: 0.25,
     },
+    commission: defaultCommission(),
+  };
+}
+
+export function defaultCommission() {
+  return {
+    enabled: false,
+    assigneeName: '',
+    threshold: 5000,
+    highRate: 0.12,
+    lowRate: 0.07,
   };
 }
 
@@ -78,6 +89,7 @@ export function minimalInputs(): Inputs {
     },
     ownerDrawTarget: 0,
     revenueGoal: { enabled: false, annualTarget: 0, targetProfitMargin: 0 },
+    commission: defaultCommission(),
   };
 }
 

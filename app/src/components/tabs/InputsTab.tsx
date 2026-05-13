@@ -6,15 +6,18 @@ import { fmt, fmtPct } from '../../format';
 import { tokens } from '../../theme';
 import type { useAppState, ImportInfo } from '../../state/useAppState';
 import type { Expense, Debt } from '../../engine/types';
+import type { TechRow } from '../../excel/adapter';
 
 type Bucket = 'criticalOpex' | 'flexibleOpex' | 'oneTimeExpenses';
 
 export function InputsTab({
   state,
   importInfo,
+  laborRoster,
 }: {
   state: ReturnType<typeof useAppState>;
   importInfo: ImportInfo | null;
+  laborRoster: TechRow[];
 }) {
   const { inputs } = state;
 
@@ -173,6 +176,73 @@ export function InputsTab({
           onRemove={state.removeDebt}
           onAdd={state.addDebt}
         />
+      </Section>
+
+      <Section title="Sales" titleEm="commission" sub="Tiered % of revenue">
+        <div className="card">
+          <Toggle
+            label="Enable sales commission"
+            checked={inputs.commission.enabled}
+            onChange={(v) => state.updateCommission({ enabled: v })}
+          />
+          {inputs.commission.enabled && (
+            <>
+              <div className="field-grid" style={{ marginTop: 20 }}>
+                <Field label="Assignee" hint="Whose annual pay this stacks onto">
+                  {laborRoster.length > 0 ? (
+                    <select
+                      className="field-input text"
+                      value={inputs.commission.assigneeName}
+                      onChange={(e) => state.updateCommission({ assigneeName: e.target.value })}
+                    >
+                      <option value="">— pick a tech —</option>
+                      {laborRoster.map((t) => (
+                        <option key={t.name} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <TextInput
+                      value={inputs.commission.assigneeName}
+                      onChange={(v) => state.updateCommission({ assigneeName: v })}
+                      placeholder="Sales rep name (free text)"
+                    />
+                  )}
+                </Field>
+                <Field label="Job-size threshold ($)" hint="Above this → high rate">
+                  <NumberInput
+                    value={inputs.commission.threshold}
+                    onChange={(v) => state.updateCommission({ threshold: Math.max(0, v) })}
+                    step={500}
+                  />
+                </Field>
+                <Field label="High rate (%) — above threshold" hint={`Currently ${fmtPct(inputs.commission.highRate)}`}>
+                  <NumberInput
+                    value={Number((inputs.commission.highRate * 100).toFixed(2))}
+                    onChange={(v) => state.updateCommission({ highRate: Math.max(0, v / 100) })}
+                    step={0.5}
+                  />
+                </Field>
+                <Field label="Low rate (%) — at/below threshold" hint={`Currently ${fmtPct(inputs.commission.lowRate)}`}>
+                  <NumberInput
+                    value={Number((inputs.commission.lowRate * 100).toFixed(2))}
+                    onChange={(v) => state.updateCommission({ lowRate: Math.max(0, v / 100) })}
+                    step={0.5}
+                  />
+                </Field>
+              </div>
+              <div style={{
+                marginTop: 16,
+                fontSize: 12,
+                color: tokens.color.muted,
+                lineHeight: 1.6,
+              }}>
+                Commission is computed each month as <strong style={{ color: tokens.color.ink }}>rate × monthly revenue</strong>,
+                where the rate is the <em>high</em> rate if average per-job revenue exceeds the threshold for that month,
+                otherwise the <em>low</em> rate.
+              </div>
+            </>
+          )}
+        </div>
       </Section>
 
       <Section title="Float" titleEm="strategy" sub="90-day LOC chain">

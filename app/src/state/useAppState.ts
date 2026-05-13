@@ -5,8 +5,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { simulate } from '../engine/simulate';
 import { mulberry32 } from '../engine/prng';
 import { runMonteCarlo, type MonteCarloResult } from '../engine/monteCarlo';
-import { importExcel } from '../excel/adapter';
-import type { Inputs, Config, Debt, Expense, FloatStrategy } from '../engine/types';
+import { importExcel, type TechRow } from '../excel/adapter';
+import type { Inputs, Config, Debt, Expense, FloatStrategy, Commission } from '../engine/types';
 
 const DEFAULT_SEED = 42;
 
@@ -23,6 +23,7 @@ export function useAppState() {
   const [inputs, setInputs] = useState<Inputs>(() => emptyInputs());
   const [seed, setSeed] = useState(DEFAULT_SEED);
   const [importInfo, setImportInfo] = useState<ImportInfo | null>(null);
+  const [laborRoster, setLaborRoster] = useState<TechRow[]>([]);
   const [mcResult, setMcResult] = useState<MonteCarloResult | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -49,6 +50,7 @@ export function useAppState() {
       // Merge imported partial Inputs onto current state — fields not present
       // in the workbook (e.g. floatStrategy) keep current values.
       setInputs((prev) => mergeInputs(prev, result.inputs));
+      setLaborRoster(result.laborRoster);
       setImportInfo({
         fileName: result.source.fileName,
         importedAt: result.source.importedAt,
@@ -64,6 +66,29 @@ export function useAppState() {
     }
   }, [pushToast]);
 
+  // Loads the bundled /public/Heartland_Budget_Model_Template.xlsx — the
+  // operator's own pre-filled template they deployed with the app. One click
+  // to populate state from those numbers.
+  const useTemplateDefaults = useCallback(async () => {
+    try {
+      const res = await fetch('/Heartland_Budget_Model_Template.xlsx');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const ab = await res.arrayBuffer();
+      const result = importExcel(ab, 'Template defaults');
+      setInputs((prev) => mergeInputs(prev, result.inputs));
+      setLaborRoster(result.laborRoster);
+      setImportInfo({
+        fileName: 'Template defaults',
+        importedAt: result.source.importedAt,
+        warnings: result.warnings,
+      });
+      pushToast('Loaded template defaults', 'info');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to load template';
+      pushToast(`Couldn't load template: ${msg}`, 'error');
+    }
+  }, [pushToast]);
+
   const replaceInputs = useCallback((next: Inputs) => setInputs(next), []);
   const updateConfig = useCallback((patch: Partial<Config>) =>
     setInputs((p) => ({ ...p, config: { ...p.config, ...patch } })), []);
@@ -71,6 +96,8 @@ export function useAppState() {
     setInputs((p) => ({ ...p, floatStrategy: { ...p.floatStrategy, ...patch } })), []);
   const updateOwnerDraw = useCallback((value: number) =>
     setInputs((p) => ({ ...p, ownerDrawTarget: value })), []);
+  const updateCommission = useCallback((patch: Partial<Commission>) =>
+    setInputs((p) => ({ ...p, commission: { ...p.commission, ...patch } })), []);
 
   const updateExpense = useCallback(
     (bucket: 'criticalOpex' | 'flexibleOpex' | 'oneTimeExpenses', id: number, patch: Partial<Expense>) =>
@@ -143,13 +170,16 @@ export function useAppState() {
     seed, setSeed,
     projection,
     importInfo,
+    laborRoster,
     toasts,
     mcResult,
     importFromFile,
+    useTemplateDefaults,
     replaceInputs,
     updateConfig,
     updateFloat,
     updateOwnerDraw,
+    updateCommission,
     addExpense,
     updateExpense,
     removeExpense,
@@ -189,6 +219,13 @@ function emptyInputs(): Inputs {
     },
     ownerDrawTarget: 5000,
     revenueGoal: { enabled: false, annualTarget: 0, targetProfitMargin: 0.25 },
+    commission: {
+      enabled: false,
+      assigneeName: '',
+      threshold: 5000,
+      highRate: 0.12,
+      lowRate: 0.07,
+    },
   };
 }
 
@@ -202,5 +239,6 @@ function mergeInputs(current: Inputs, imported: Partial<Inputs>): Inputs {
     floatStrategy:   imported.floatStrategy   ?? current.floatStrategy,
     ownerDrawTarget: imported.ownerDrawTarget ?? current.ownerDrawTarget,
     revenueGoal:     imported.revenueGoal     ?? current.revenueGoal,
+    commission:      imported.commission      ?? current.commission,
   };
 }

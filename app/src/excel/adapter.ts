@@ -8,8 +8,22 @@
 import * as XLSX from 'xlsx';
 import type { Inputs, Debt, Expense } from '../engine/types';
 
+export interface TechRow {
+  name: string;
+  wagePerHour: number | null;
+  hoursPerWeek: number | null;
+  paidHoursPerMonth: number | null;
+  billableTimePct: number | null;
+  billableHoursPerMonth: number | null;
+  benefitsPerMonth: number | null;
+  loadedMonthlyCost: number;
+  costPerBillableHour: number | null;
+  notes: string | null;
+}
+
 export interface ExcelImportResult {
   inputs: Partial<Inputs>;
+  laborRoster: TechRow[];
   warnings: string[];
   source: {
     fileName: string;
@@ -132,7 +146,7 @@ export function importExcel(
     }
   }
 
-  // ─── Labor → criticalOpex "Payroll (all techs)" ───────────────────────────
+  // ─── Labor → criticalOpex "Payroll (all techs)" + roster reference ────────
   const laborRows = sheetRows('2. Labor');
   const totalLaborRow = findRow(laborRows, 'Total monthly labor cost');
   const totalLabor = numAt(totalLaborRow, 2);
@@ -151,6 +165,11 @@ export function importExcel(
       'No payroll expense imported.',
     );
   }
+
+  // Extract the per-tech roster as a reference (not as model inputs — the
+  // engine sees one aggregated payroll line). Used by the UI to show
+  // per-person annual cost on the Overview tab.
+  const laborRoster = extractLaborRoster(laborRows);
 
   // ─── Investments → debts (financed rows only) ─────────────────────────────
   const investRows = sheetRows('4. Investments');
@@ -238,10 +257,59 @@ export function importExcel(
       debts,
       ownerDrawTarget,
     },
+    laborRoster,
     warnings,
     source: {
       fileName,
       importedAt: new Date().toISOString(),
     },
   };
+}
+
+// ─── Labor roster extraction ────────────────────────────────────────────────
+// Layout on the Labor sheet (col indices, 0-based):
+//   B(1) Name · C(2) Wage $/hr · D(3) Hrs/wk · E(4) Paid hrs/mo
+//   F(5) Billable Time % · G(6) Billable hrs/mo · H(7) Benefits $/mo
+//   I(8) Loaded $/mo · J(9) Cost / billable hr · K(10) Notes
+// The roster sits between the "Tech Name" header row and "ROSTER TOTALS" row.
+function extractLaborRoster(
+  rows: { rowNum: number; cells: (string | number | null)[] }[],
+): TechRow[] {
+  // Locate the "Tech Name" header to anchor where rows start.
+  const headerIdx = rows.findIndex(
+    (r) => typeof r.cells[1] === 'string' && r.cells[1].trim().toLowerCase() === 'tech name',
+  );
+  if (headerIdx === -1) return [];
+
+  const result: TechRow[] = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const cells = rows[i]!.cells;
+    const name = cells[1];
+    if (typeof name !== 'string') continue;
+    const trimmed = name.trim();
+    if (trimmed === '') continue;
+    // Stop at the totals row or any clearly non-tech row.
+    if (/^(ROSTER TOTALS|TEAM SUMMARY|Number of techs|Total monthly|Weighted)/i.test(trimmed)) break;
+
+    const loaded = cells[8];
+    if (typeof loaded !== 'number' || loaded <= 0) continue;
+
+    result.push({
+      name: trimmed,
+      wagePerHour:          numOrNull(cells[2]),
+      hoursPerWeek:         numOrNull(cells[3]),
+      paidHoursPerMonth:    numOrNull(cells[4]),
+      billableTimePct:      numOrNull(cells[5]),
+      billableHoursPerMonth:numOrNull(cells[6]),
+      benefitsPerMonth:     numOrNull(cells[7]),
+      loadedMonthlyCost:    loaded,
+      costPerBillableHour:  numOrNull(cells[9]),
+      notes:                typeof cells[10] === 'string' ? (cells[10] as string).trim() || null : null,
+    });
+  }
+  return result;
+}
+
+function numOrNull(v: unknown): number | null {
+  return typeof v === 'number' ? v : null;
 }

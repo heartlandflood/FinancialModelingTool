@@ -212,11 +212,19 @@ function simulateMonth(args: MonthInputs): MonthOutputs {
 
   const ownerDraw = inputs.ownerDrawTarget;
 
+  // Commission: per-job revenue → tier → rate × full month revenue.
+  const perJobRevenue = numJobs > 0 ? revenue / numJobs : 0;
+  const commissionRate = inputs.commission.enabled
+    ? (perJobRevenue > inputs.commission.threshold ? inputs.commission.highRate : inputs.commission.lowRate)
+    : 0;
+  const commissionPaid = revenue * commissionRate;
+
   const cashNeeded =
     nonFloatCritical +
     flexibleTotal +
     nonFloatOneTime +
     ownerDraw +
+    commissionPaid +
     totalDebtPayment +
     floatSettlementCash;
 
@@ -331,7 +339,9 @@ function simulateMonth(args: MonthInputs): MonthOutputs {
 
   // ─── §9  Reporting metrics ───────────────────────────────────────────────
   const allOpex = criticalTotal + flexibleTotal + oneTimeTotal;
-  const operatingProfit = collections - allOpex - totalInterest - ownerDraw;
+  // Commission is part of operating cost (accrual basis): subtract it
+  // alongside opex/interest/owner draw.
+  const operatingProfit = collections - allOpex - totalInterest - ownerDraw - commissionPaid;
   const cumulativeOperatingProfit = args.cumulativeOperatingProfitIn + operatingProfit;
 
   const totalDebt = Object.values(debtBalances).reduce((s, b) => s + b, 0);
@@ -354,6 +364,8 @@ function simulateMonth(args: MonthInputs): MonthOutputs {
     totalDebt,
     debtBalances: { ...debtBalances },
     cashShortage,
+    commissionPaid,
+    commissionRate,
     events,
     operatingProfit,
     cumulativeOperatingProfit,

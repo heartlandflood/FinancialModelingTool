@@ -48,6 +48,13 @@ const inputs: Inputs = {
     annualTarget: imp.inputs.config!.avgJobSize * 12,
     targetProfitMargin: 0.25,
   },
+  commission: {
+    enabled: false,
+    assigneeName: '',
+    threshold: 5000,
+    highRate: 0.12,
+    lowRate: 0.07,
+  },
 };
 
 console.log('\n=== 18-month projection (Excel inputs, seed 42) ===\n');

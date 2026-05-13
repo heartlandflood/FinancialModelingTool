@@ -46,6 +46,21 @@ export interface RevenueGoal {
   targetProfitMargin: number; // 0..1
 }
 
+// Per-job tiered sales commission. The engine computes per-job revenue
+// (revenue / numJobs) and applies the high rate when that's strictly above
+// threshold, otherwise the low rate. The cost lands in cash outflows.
+//
+// `assigneeName` is informational only — used by the UI to attribute the
+// commission to a specific person in the labor roster. The engine doesn't
+// read it.
+export interface Commission {
+  enabled: boolean;
+  assigneeName: string;
+  threshold: number;   // dollars per job; default $5,000
+  highRate: number;    // e.g. 0.12 for jobs > threshold
+  lowRate: number;     // e.g. 0.07 for jobs <= threshold
+}
+
 export interface Inputs {
   config: Config;
   debts: Debt[];
@@ -55,6 +70,7 @@ export interface Inputs {
   floatStrategy: FloatStrategy;
   ownerDrawTarget: number;    // monthly target; treated as an expense in the sim
   revenueGoal: RevenueGoal;
+  commission: Commission;
 }
 
 export type DebtEventType =
@@ -92,6 +108,8 @@ export interface MonthResult {
   totalDebt: number;          // end-of-month
   debtBalances: Record<number, number>;
   cashShortage: number;       // 0 if covered; otherwise uncovered amount
+  commissionPaid: number;     // total commission cash outflow this month
+  commissionRate: number;     // effective rate used this month (high or low)
   events: DebtEvent[];
   // Accrual & cash views (see rules.md §9):
   operatingProfit: number;            // single-month: collections − opex − interest − ownerDraw

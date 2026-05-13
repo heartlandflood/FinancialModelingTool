@@ -16,11 +16,13 @@ export function Layout({
   tab,
   onTab,
   onImport,
+  onUseTemplate,
   children,
 }: {
   tab: TabKey;
   onTab: (t: TabKey) => void;
   onImport: (file: File) => void;
+  onUseTemplate: () => void;
   children: ReactNode;
 }) {
   return (
@@ -50,7 +52,7 @@ export function Layout({
           </nav>
 
           <div className="header-actions">
-            <FileActions onImport={onImport} />
+            <FileActions onImport={onImport} onUseTemplate={onUseTemplate} />
           </div>
         </div>
       </header>

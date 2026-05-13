@@ -101,4 +101,24 @@ describe('rules §12: Excel adapter — Heartland_Budget_Model_v1.2.xlsx', () =>
     expect(r.source.fileName).toBe('Heartland_Budget_Model_v1.2.xlsx');
     expect(new Date(r.source.importedAt).toString()).not.toBe('Invalid Date');
   });
+
+  it('extracts per-tech labor roster from the Labor sheet', () => {
+    const r = loadExcel();
+    expect(r.laborRoster.length).toBeGreaterThan(0);
+
+    // The v1.2 workbook has these tech rows.
+    const names = r.laborRoster.map((t) => t.name);
+    expect(names).toEqual(expect.arrayContaining(['Tech 1 — Lead', 'Tech 2 — Mid']));
+
+    // Tech 1 — Lead should have a loaded monthly cost matching the workbook.
+    const lead = r.laborRoster.find((t) => t.name === 'Tech 1 — Lead')!;
+    expect(lead.loadedMonthlyCost).toBeCloseTo(6343.51, 1);
+    expect(lead.wagePerHour).toBe(30);
+
+    // Roster aggregate should reconcile (within rounding) to the imported
+    // "Payroll" critical-OpEx amount.
+    const rosterTotal = r.laborRoster.reduce((s, t) => s + t.loadedMonthlyCost, 0);
+    const payroll = r.inputs.criticalOpex!.find((e) => e.name.toLowerCase().startsWith('payroll'))!;
+    expect(rosterTotal).toBeCloseTo(payroll.amount, 1);
+  });
 });
